@@ -19,7 +19,7 @@
     "gulp-ruby-sass": "^2.1.1",
     "gulp-sass": "^4.0.2",
     "gulp-strip-debug": "^1.1.0",
-    "gulp-todo": "^5.1.0",
+    "gulp-todo": "^7.0.0",
     "gulp-uglify": "^2.0.0",
     "jshint": "^2.9.4",
     "jshint-stylish": "^2.2.1",
