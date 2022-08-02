@@ -31,32 +31,27 @@ def _split_value(value):
 
 
 def delete(key=None):
-    parts_count = memcache.get(key='%s_parts' % key)
-    if parts_count:
+    if parts_count := memcache.get(key=f'{key}_parts'):
         for i in xrange(parts_count):
             memcache.delete(key='%s%d' % (key, i))
 
     memcache.delete(key=key)
-    memcache.delete(key='%s_parts' % key)
+    memcache.delete(key=f'{key}_parts')
 
 
 def set(key=None, value=None, time=TIMEOUT):
     parts = _split_value(json.dumps(value))
-    memcache.set(key=key + '_parts', value=len(parts), time=time)
+    memcache.set(key=f'{key}_parts', value=len(parts), time=time)
     for i, part in enumerate(parts):
         logging.debug("Setting %s%d" % (key, i))
         memcache.set(key='%s%d' % (key, i), value=part, time=time)
 
 
 def get(key):
-    parts_count = memcache.get(key='%s_parts' % key)
-    if parts_count:
-        chunk = ''
-        for i in xrange(parts_count):
-            logging.debug("Fetching %s%d" % (key, i))
-            chunk += str(memcache.get(key='%s%d' % (key, i)))
-        val = json.loads(chunk)
-
-        return val
-    else:
+    if not (parts_count := memcache.get(key=f'{key}_parts')):
         return memcache.get(key)
+    chunk = ''
+    for i in xrange(parts_count):
+        logging.debug("Fetching %s%d" % (key, i))
+        chunk += str(memcache.get(key='%s%d' % (key, i)))
+    return json.loads(chunk)

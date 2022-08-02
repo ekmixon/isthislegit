@@ -29,7 +29,7 @@ def collect(message):
 def collect_from_status(body):
     out = deque()
     with closing(StringIO(body)) as stream:
-        for i in xrange(3):
+        for _ in xrange(3):
             out += parse_stream(stream)
     return out
 
@@ -67,7 +67,4 @@ class Result(object):
         self.diagnostic_code = diagnostic_code
 
     def __repr__(self):
-        return (u'bounce.Result(status={}, score={}, notification={},'
-                u' diag_code={})'.format(self.status, self.score,
-                                         self.notification,
-                                         self.diagnostic_code))
+        return f'bounce.Result(status={self.status}, score={self.score}, notification={self.notification}, diag_code={self.diagnostic_code})'

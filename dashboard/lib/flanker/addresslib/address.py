@@ -91,11 +91,7 @@ def parse(address, addr_spec_only=False, strict=False, metrics=False):
         None
     """
     mtimes = {'parsing': 0}
-    if addr_spec_only:
-        parser = addr_spec_parser
-    else:
-        parser = mailbox_or_url_parser
-
+    parser = addr_spec_parser if addr_spec_only else mailbox_or_url_parser
     # normalize inputs to bytestrings
     if isinstance(address, unicode):
         address = address.encode('utf-8')
@@ -235,9 +231,7 @@ def parse_list(address_list, strict=False, as_tuple=False, metrics=False):
                     parsed.append(addr_obj)
                 else:
                     unparsed.append(address)
-            elif isinstance(address, EmailAddress):
-                parsed.append(address)
-            elif isinstance(address, UrlAddress):
+            elif isinstance(address, (EmailAddress, UrlAddress)):
                 parsed.append(address)
             else:
                 unparsed.append(address)
@@ -391,15 +385,11 @@ def validate_list(addr_list, as_tuple=False, metrics=False):
         for k, v in metrics.iteritems():
             metrics[k] += v
 
-    if as_tuple:
-        return plist, ulist, mtimes
-    return plist, mtimes
+    return (plist, ulist, mtimes) if as_tuple else (plist, mtimes)
 
 
 def is_email(string):
-    if parse(string, True):
-        return True
-    return False
+    return bool(parse(string, True))
 
 
 class Address(object):
@@ -545,21 +535,25 @@ class EmailAddress(Address):
 
     @property
     def address(self):
-        return u'{}@{}'.format(self.mailbox, self.hostname)
+        return f'{self.mailbox}@{self.hostname}'
 
     @property
     def ace_address(self):
         if not is_pure_ascii(self.mailbox):
-            raise ValueError('address {} has no ASCII-compatable encoding'
-                             .format(self.address.encode('utf-8')))
+            raise ValueError(
+                f"address {self.address.encode('utf-8')} has no ASCII-compatable encoding"
+            )
+
         ace_hostname = self.hostname
         if not is_pure_ascii(self.hostname):
             try:
                 ace_hostname = idna.encode(self.hostname)
             except idna.IDNAError:
-                raise ValueError('address {} has no ASCII-compatable encoding'
-                                 .format(self.address.encode('utf-8')))
-        return '{}@{}'.format(self.mailbox, ace_hostname)
+                raise ValueError(
+                    f"address {self.address.encode('utf-8')} has no ASCII-compatable encoding"
+                )
+
+        return f'{self.mailbox}@{ace_hostname}'
 
     @property
     def supports_routing(self):
@@ -576,8 +570,8 @@ class EmailAddress(Address):
 
     def __unicode__(self):
         if self.display_name:
-            return u'{} <{}@{}>'.format(smart_quote(self.display_name), self.mailbox, self.hostname)
-        return u'{}@{}'.format(self.mailbox, self.hostname)
+            return f'{smart_quote(self.display_name)} <{self.mailbox}@{self.hostname}>'
+        return f'{self.mailbox}@{self.hostname}'
 
     def to_unicode(self):
         return unicode(self)
@@ -595,10 +589,11 @@ class EmailAddress(Address):
            '=?utf-8?b?0JbQtdC60LA=?= <ev@example.com>'
         """
         ace_address = self.ace_address
-        if not self.display_name:
-            return self.ace_address
-
-        return '{} <{}>'.format(self.ace_display_name, ace_address)
+        return (
+            f'{self.ace_display_name} <{ace_address}>'
+            if self.display_name
+            else self.ace_address
+        )
 
     def contains_non_ascii(self):
         """
@@ -634,9 +629,7 @@ class EmailAddress(Address):
         """
         if isinstance(other, basestring):
             other = parse(other)
-        if other:
-            return self.address.lower() == other.address.lower()
-        return False
+        return self.address.lower() == other.address.lower() if other else False
 
     def __ne__(self, other):
         """
@@ -705,11 +698,7 @@ class UrlAddress(Address):
 
     @property
     def hostname(self):
-        hostname = self._address.hostname
-        if hostname:
-            return hostname.lower()
-        else:
-            return None
+        return hostname.lower() if (hostname := self._address.hostname) else None
 
     @property
     def port(self):
@@ -742,9 +731,7 @@ class UrlAddress(Address):
         "Allows comparison of two URLs"
         if isinstance(other, basestring):
             other = parse(other)
-        if other:
-            return self.address == other.address
-        return False
+        return self.address == other.address if other else False
 
     def __hash__(self):
         return hash(self.address)
@@ -778,7 +765,7 @@ class AddressList(object):
 
     def append(self, addr):
         if not isinstance(addr, Address):
-            raise TypeError('Unexpected type %s' % type(addr))
+            raise TypeError(f'Unexpected type {type(addr)}')
         self._container.append(addr)
 
     def remove(self, addr):
@@ -800,7 +787,7 @@ class AddressList(object):
         if isinstance(other, (list, str, unicode)):
             other = parse_list(other)
         if not isinstance(other, AddressList):
-            raise TypeError('Cannot compare with %s' % type(other))
+            raise TypeError(f'Cannot compare with {type(other)}')
         return set(self._container) == set(other._container)
 
     def __repr__(self):
@@ -820,7 +807,7 @@ class AddressList(object):
             other = parse_list(other)
 
         if not isinstance(other, AddressList):
-            raise TypeError('Cannot add %s' % type(other))
+            raise TypeError(f'Cannot add {type(other)}')
 
         container = self._container + other._container
         addr_lst = AddressList()
@@ -858,14 +845,14 @@ class AddressList(object):
         """
         Returns a set of hostnames used in addresses in this list.
         """
-        return set([addr.hostname for addr in self._container])
+        return {addr.hostname for addr in self._container}
 
     @property
     def addr_types(self):
         """
         Returns a set of address types used in addresses in this list.
         """
-        return set([addr.addr_type for addr in self._container])
+        return {addr.addr_type for addr in self._container}
 
 
 def _lift_parse_result(parse_rs):
@@ -875,7 +862,7 @@ def _lift_parse_result(parse_rs):
                 display_name=smart_unquote(parse_rs.display_name.decode('utf-8')),
                 mailbox=parse_rs.local_part.decode('utf-8'),
                 hostname=parse_rs.domain.decode('utf-8'))
-        except (UnicodeError, IDNAError):
+        except UnicodeError:
             return None
 
     if isinstance(parse_rs, Url):
@@ -891,8 +878,10 @@ def _lift_parse_list_result(parse_list_rs):
         addr_obj = _lift_parse_result(parse_rs)
         if not addr_obj:
             if isinstance(parse_rs, Mailbox):
-                bad_list.append(u'%s@%s' % (parse_rs.local_part.decode('utf-8'),
-                                            parse_rs.domain.decode('utf-8')))
+                bad_list.append(
+                    f"{parse_rs.local_part.decode('utf-8')}@{parse_rs.domain.decode('utf-8')}"
+                )
+
             continue
 
         addr_list_obj.append(addr_obj)
@@ -901,7 +890,4 @@ def _lift_parse_list_result(parse_list_rs):
 
 
 def _parse_list_result(as_tuple, parsed, unparsed, mtimes):
-    if as_tuple:
-        return parsed, unparsed, mtimes
-
-    return parsed, mtimes
+    return (parsed, unparsed, mtimes) if as_tuple else (parsed, mtimes)

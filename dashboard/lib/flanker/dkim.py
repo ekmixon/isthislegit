@@ -94,8 +94,7 @@ class DomainKeySigner(object):
                 signer.update(header)
                 signer.update(b":")
                 signer.update(value)
-        body = canonicalization.canonicalize_body(body)
-        if body:
+        if body := canonicalization.canonicalize_body(body):
             signer.update(b"\r\n")
             signer.update(body)
 
@@ -187,11 +186,7 @@ def _rfc822_parse(message):
             m = _RFC822_HEADER_RE.match(lines[i])
             if m is not None:
                 headers.append([m.group(1), lines[i][m.end(0):] + "\r\n"])
-            elif lines[i].startswith("From "):
-                pass
-            else:
-                raise ValueError(
-                    "Unexpected characters in RFC822 header: %s" % lines[i]
-                )
+            elif not lines[i].startswith("From "):
+                raise ValueError(f"Unexpected characters in RFC822 header: {lines[i]}")
         i += 1
     return (headers, "\r\n".join(lines[i:]))

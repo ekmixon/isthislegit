@@ -8,13 +8,13 @@ class Rule(object):
     * process(EmailReport): void - Processes the EmailReport (no return value)
     '''
 
-    def match(report):
+    def match(self):
         ''' Returns whether or not the rule matches the provided EmailReport based on
         one or more Conditions. 
         '''
         raise NotImplementedError
 
-    def process(report):
+    def process(self):
         ''' Processes the email report and executes one or more Actions.
         '''
         raise NotImplementedError
@@ -24,7 +24,7 @@ class Condition(object):
     ''' A Condition is an interface that potentially matches an EmailReport
     '''
 
-    def match(report):
+    def match(self):
         raise NotImplementedError
 
 
@@ -33,5 +33,5 @@ class Action(object):
     and perform a function.
     '''
 
-    def process(report):
+    def process(self):
         raise NotImplementedError

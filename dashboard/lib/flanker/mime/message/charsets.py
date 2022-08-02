@@ -20,7 +20,7 @@ def _translate_charset(charset):
         return 'shift_jis'
 
     # cp874 looks to be an alias for windows-874
-    if "windows-874" == charset.lower():
+    if charset.lower() == "windows-874":
         return "cp874"
 
     if 'koi8-r' in charset.lower():

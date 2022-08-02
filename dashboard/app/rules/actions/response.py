@@ -5,5 +5,5 @@ class Response(Action):
     
     This is to send a reply back to the user'''
 
-    def process(report):
+    def process(self):
         pass

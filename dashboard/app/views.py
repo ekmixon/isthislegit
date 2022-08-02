@@ -52,7 +52,7 @@ def logout():
     out of all Google accounts
     '''
     if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
-        return redirect('_ah/logout?continue=https://' + request.host + '/')
+        return redirect(f'_ah/logout?continue=https://{request.host}/')
     return redirect(users.create_logout_url('/'))
 
 
@@ -63,9 +63,10 @@ def view_report(report_id):
         abort(404)
     return render_template(
         'report.html',
-        title='Report Details - {}'.format(report.key.id()),
+        title=f'Report Details - {report.key.id()}',
         report=report,
-        events=[event.get() for event in report.events])
+        events=[event.get() for event in report.events],
+    )
 
 
 def json_error(status_code, message, data):
@@ -179,8 +180,9 @@ def rules():
         return json_error(400, str(e), {})
 
     base_query = Rule.domain_query(g.domain)
-    name_rule = Rule.get_by_name(base_query, request.get_json().get('name'))
-    if name_rule:
+    if name_rule := Rule.get_by_name(
+        base_query, request.get_json().get('name')
+    ):
         return json_error(400, 'Rule name already in use', {})
 
     try:
@@ -233,7 +235,9 @@ def list_errors(form):
     """Flash all errors for a form."""
     error_list = []
     for field, errors in form.errors.items():
-        for error in errors:
-            error_list.append(
-                '{0} - {1}'.format(getattr(form, field).label.text, error))
+        error_list.extend(
+            '{0} - {1}'.format(getattr(form, field).label.text, error)
+            for error in errors
+        )
+
     return error_list

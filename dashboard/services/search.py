@@ -64,7 +64,7 @@ class AppEngineProvider(SearchProvider):
         self.store.put(doc)
 
     def search(self, query):
-        print('Searching for {}'.format(query))
+        print(f'Searching for {query}')
         return self.store.search(query)
 
     def delete(self, doc_id):

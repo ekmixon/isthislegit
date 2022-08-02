@@ -49,10 +49,6 @@ def build_query(request):
     for key, value in request.values.iteritems():
         if key not in EmailReport.searchable_properties:
             continue
-        # Handle querying for EmailAddress properties
-        if key == "to":
-            pass
-
     return query
 
 
@@ -207,9 +203,11 @@ def rule(rule_id):
         rule_id - int - The ID of the Rule 
     """
     rule = Rule.get_by_id(rule_id)
-    if not rule:
-        return json_error(404, 'Rule not found', {})
-    return jsonify(rule.to_dict())
+    return (
+        jsonify(rule.to_dict())
+        if rule
+        else json_error(404, 'Rule not found', {})
+    )
 
 
 @api_blueprint.route('/rules/<int:rule_id>/delete', methods=['POST'])

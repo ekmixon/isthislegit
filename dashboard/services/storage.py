@@ -40,8 +40,7 @@ class GoogleCloudStorageProvider(StorageProvider):
         attachment - The models.Attachment metadata for the file
         content - The file content
         '''
-        filename = '/{}/{}'.format(self.bucket_name,
-                                   attachment.stored_filename)
+        filename = f'/{self.bucket_name}/{attachment.stored_filename}'
         write_retry_params = gcs.RetryParams(backoff_factor=1.1)
         gcs_file = gcs.open(
             filename,
@@ -57,7 +56,7 @@ class GoogleCloudStorageProvider(StorageProvider):
         Args:
         filename - The filename to fetch
         '''
-        filename = '/{}/{}'.format(self.bucket_name, filename)
+        filename = f'/{self.bucket_name}/{filename}'
         gcs_file = gcs.open(filename, 'r')
         content = gcs_file.read()
         gcs_file.close()

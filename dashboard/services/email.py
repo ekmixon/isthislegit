@@ -91,10 +91,11 @@ class AppEngineProvider(EmailProvider):
         response = service.users().messages().get(
             userId=userId, id=messageId, format='raw').execute()
         if not response or 'raw' not in response:
-            raise EmailFetchError('Error fetching email: User {}, thread {}'.
-                                  format(userId, messageId))
-        message = base64.urlsafe_b64decode(str(response['raw']))
-        return message
+            raise EmailFetchError(
+                f'Error fetching email: User {userId}, thread {messageId}'
+            )
+
+        return base64.urlsafe_b64decode(str(response['raw']))
 
 
 if config['email']['provider'] == 'gae':

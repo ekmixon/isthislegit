@@ -40,7 +40,8 @@ def add(folder, index=1):
   """
 
   # Check if the path contains a virtualenv.
-  site_dir = os.path.join(folder, 'lib', 'python' + sys.version[:3], 'site-packages')
+  site_dir = os.path.join(folder, 'lib', f'python{sys.version[:3]}',
+                          'site-packages')
   if os.path.exists(site_dir):
     folder = site_dir
   # Otherwise it's just a normal path, make it absolute.

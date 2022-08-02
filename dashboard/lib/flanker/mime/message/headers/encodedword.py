@@ -51,12 +51,11 @@ def mime_to_unicode(header):
         decoded = []  # decoded parts
 
         while header:
-            match = encodedWord.search(header)
-            if match:
+            if match := encodedWord.search(header):
                 start = match.start()
                 if start != 0:
                     # decodes unencoded ascii part to unicode
-                    value = charsets.convert_to_unicode(ascii, header[0:start])
+                    value = charsets.convert_to_unicode(ascii, header[:start])
                     if value.strip():
                         decoded.append(value)
                 # decode a header =?...?= of encoding
@@ -114,9 +113,7 @@ def decode_part(charset, encoding, value):
         return (charset, email.quoprimime.header_decode(str(value)))
 
     elif encoding == 'b':
-        # Postel's law: add missing padding
-        paderr = len(value) % 4
-        if paderr:
+        if paderr := len(value) % 4:
             value += '==='[:4 - paderr]
         return (charset, email.base64mime.decode(value))
 

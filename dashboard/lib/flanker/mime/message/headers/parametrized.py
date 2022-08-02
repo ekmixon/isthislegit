@@ -51,9 +51,11 @@ def split(header):
          ["multipart/mixed", "boundary=hal_9000"]
     """
     match = headerValue.match(header)
-    if not match:
-        return (None, None)
-    return match.group(1).lower(), header[match.end():]
+    return (
+        (match.group(1).lower(), header[match.end() :])
+        if match
+        else (None, None)
+    )
 
 
 def decode_parameters(string):
@@ -65,10 +67,10 @@ def decode_parameters(string):
 
     decode them to the dictionary with keys and values"""
     parameters = collect_parameters(string)
-    groups = {}
-    for k, parts in groupby(parameters, get_key):
-        groups[k] = concatenate(list(parts))
-    return groups
+    return {
+        k: concatenate(list(parts))
+        for k, parts in groupby(parameters, get_key)
+    }
 
 
 def collect_parameters(rest):
@@ -112,8 +114,7 @@ def match_parameter(rest):
 
 
 def match_old(rest):
-    match = oldStyleParameter.match(rest)
-    if match:
+    if match := oldStyleParameter.match(rest):
         name = match.group('name')
         value = match.group('value')
         return parameter('old', name, value), rest[match.end():]
@@ -122,8 +123,7 @@ def match_old(rest):
 
 
 def match_new(rest):
-    match = newStyleParameter.match(rest)
-    if match:
+    if match := newStyleParameter.match(rest):
         name = parse_parameter_name(match.group('name'))
         value = match.group('value')
         return parameter('new', name, value), rest[match.end():]

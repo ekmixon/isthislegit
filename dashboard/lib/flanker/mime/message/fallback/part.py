@@ -21,10 +21,11 @@ class FallbackMimePart(RichPartMixin):
 
     @property
     def size(self):
-        if not self._m.is_multipart():
-            return len(self._m.get_payload(decode=False))
-        else:
-            return sum(p.size for p in self.parts)
+        return (
+            sum(p.size for p in self.parts)
+            if self._m.is_multipart()
+            else len(self._m.get_payload(decode=False))
+        )
 
     @property
     def headers(self):

@@ -34,8 +34,7 @@ class BaseAction(object):
             }
             choices = cls.options[option].get('choices')
 
-            choiceFunc = cls.options[option].get('choiceFunc')
-            if choiceFunc:
+            if choiceFunc := cls.options[option].get('choiceFunc'):
                 choices = choiceFunc(**kwargs)
 
             if choices:

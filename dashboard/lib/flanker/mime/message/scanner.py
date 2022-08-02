@@ -64,9 +64,6 @@ def traverse(pointer, iterator, parent=None, allow_bad_mime=False):
             iterator=iterator,
             parent=parent)
 
-    # good old multipart message
-    # here goes the real recursion
-    # we scan part by part until the end
     elif token.is_multipart():
         content_type = token
 
@@ -105,20 +102,16 @@ def traverse(pointer, iterator, parent=None, allow_bad_mime=False):
             parts=parts,
             parent=parent)
 
-    # this is a weird mime part, actually
-    # it can contain multiple headers
-    # separated by newlines, so we grab them here
     elif token.is_delivery_status():
 
-        if parent and parent.is_multipart():
-            while True:
-                iterator.check()
-                end = iterator.next()
-                if not end.is_content_type():
-                    break
-        else:
+        if not parent or not parent.is_multipart():
             raise DecodingError("Malformed delivery status message")
 
+        while True:
+            iterator.check()
+            end = iterator.next()
+            if not end.is_content_type():
+                break
         return make_part(
             content_type=token,
             start=pointer,
@@ -126,9 +119,6 @@ def traverse(pointer, iterator, parent=None, allow_bad_mime=False):
             iterator=iterator,
             parent=parent)
 
-    # this is a message container that holds
-    # a message inside, delimited from parent
-    # headers by newline
     elif token.is_message_container():
         # Delivery notification body can contain all sorts of bad MIME.
         allow_bad_mime = parent and parent.is_delivery_report()
@@ -141,8 +131,6 @@ def traverse(pointer, iterator, parent=None, allow_bad_mime=False):
                      enclosed=enclosed,
                      parent=parent)
 
-    # this part contains headers separated by newlines,
-    # grab these headers and enclose them in one part
     elif token.is_headers_container():
         enclosed = grab_headers(pointer, iterator, token)
         return make_part(
@@ -191,11 +179,7 @@ def make_part(content_type, start, end, iterator, parts=[], enclosed=None,
     # here we detect where the message really starts
     # the exact position in the string, at the end of the
     # starting boundary and after the beginning of the end boundary
-    if start.is_boundary():
-        start = start.end + 1
-    else:
-        start = start.start
-
+    start = start.end + 1 if start.is_boundary() else start.start
     # if this is the message ending, end of part
     # the position of the last symbol of the message
     if end.is_end():
@@ -225,10 +209,12 @@ def make_part(content_type, start, end, iterator, parts=[], enclosed=None,
             start=start,
             end=end,
             stream=iterator.stream,
-            string=iterator.string),
+            string=iterator.string,
+        ),
         parts=parts,
         enclosed=enclosed,
-        is_root=(parent==None))
+        is_root=parent is None,
+    )
 
 
 def locate_first_newline(stream, start):
@@ -285,11 +271,10 @@ class Boundary(object):
         return self.final
 
     def __str__(self):
-        return "Boundary({}, final={})".format(self.value, self.final)
+        return f"Boundary({self.value}, final={self.final})"
 
     def __repr__(self):
-        return ("Boundary('{}', {}, {}, final={})"
-                .format(self.value, self.start, self.end, self.final))
+        return f"Boundary('{self.value}', {self.start}, {self.end}, final={self.final})"
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -416,9 +401,8 @@ def _grab_newline(position, string, direction):
     """
     while 0 < position < len(string):
         if string[position] == '\n':
-            if direction < 0:
-                if position - 1 > 0 and string[position-1] == '\r':
-                    return position - 1
+            if direction < 0 and position > 1 and string[position - 1] == '\r':
+                return position - 1
             return position
         position += direction
     return position
@@ -444,7 +428,7 @@ def _filter_false_tokens(tokens):
             # Only the first content-type header in a headers section is valid.
             if current_content_type or current_section != _SECTION_HEADERS:
                 continue
-    
+
             current_content_type = token
             boundaries.append(token.get_boundary())
 
@@ -494,7 +478,4 @@ def _filter_false_tokens(tokens):
 
 
 def _strip_endings(value):
-    if value.endswith("--"):
-        return value[:-2]
-    else:
-        return value
+    return value[:-2] if value.endswith("--") else value

@@ -30,13 +30,12 @@ def to_mime(key, value):
 
 def encode(name, value):
     try:
-        if parametrized.is_parametrized(name, value):
-            value, params = value
-            return encode_parametrized(name, value, params)
-        else:
+        if not parametrized.is_parametrized(name, value):
             return encode_unstructured(name, value)
+        value, params = value
+        return encode_parametrized(name, value, params)
     except Exception:
-        log.exception("Failed to encode %s %s" % (name, value))
+        log.exception(f"Failed to encode {name} {value}")
         raise
 
 
@@ -69,7 +68,7 @@ def encode_address_header(name, value):
 def encode_parametrized(key, value, params):
     if params:
         params = [encode_param(key, n, v) for n, v in params.iteritems()]
-        return value + "; " + ("; ".join(params))
+        return f"{value}; " + ("; ".join(params))
     else:
         return value
 

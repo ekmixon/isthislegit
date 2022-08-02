@@ -25,7 +25,7 @@ class Header(ndb.Model):
     value = ndb.StringProperty()
 
     def __str__(self):
-        return '{}: {}'.format(self.name, self.value)
+        return f'{self.name}: {self.value}'
 
 
 class Attachment(ndb.Model):
@@ -45,7 +45,7 @@ class EmailAddress(ndb.Model):
     address = ndb.StringProperty(required=True)
 
     def __str__(self):
-        return '{}@{}'.format(self.name, self.address)
+        return f'{self.name}@{self.address}'
 
 
 class EmailResponse(ndb.Model):
@@ -211,7 +211,7 @@ class EmailReport(ndb.Model):
         return result
 
     @property
-    def searchable_properties(cls):
+    def searchable_properties(self):
         return [
             'report_type', 'thread_id', 'history_id', 'date_received',
             'date_reported', 'date_responded', 'has_responded', 'sender',
@@ -249,11 +249,15 @@ class EmailReport(ndb.Model):
         """
         Returns the summary of the requested EmailReport objects
         """
-        reports = base_query.fetch(projection=[
-            cls.key, cls.date_reported, cls.subject, cls.sender.address,
-            cls.to.address
-        ])
-        return reports
+        return base_query.fetch(
+            projection=[
+                cls.key,
+                cls.date_reported,
+                cls.subject,
+                cls.sender.address,
+                cls.to.address,
+            ]
+        )
 
     @classmethod
     def get_unread_count(cls, base_query):
@@ -322,7 +326,7 @@ class Stats(object):
         Returns the current stats for a domain
         """
         self._domain = domain
-        self._namespace = '{}|{}'.format('stats', domain)
+        self._namespace = f'stats|{domain}'
         self.pending = self.get("Pending")
         self.benign = self.get("Benign")
         self.malicious = self.get("Malicious")
@@ -367,7 +371,7 @@ class Stats(object):
             domain - str - The domain to use for the namespace
             time - int - The timeout for stored keys (default: 5 seconds)
         """
-        namespace = "{}|{}".format('stats', domain)
+        namespace = f"stats|{domain}"
 
         for status in VALID_STATUSES:
             count = EmailReport.query(EmailReport.reported_domain == domain,
@@ -421,10 +425,7 @@ class ReporterCount(ndb.Model):
         if count > cls._memcache_result_count:
             return cls._get_from_datastore(domain, count)
 
-        cached = memcache.get(
-            key=cls._memcache_key, namespace='{}|'.format(domain))
-
-        if cached:
+        if cached := memcache.get(key=cls._memcache_key, namespace=f'{domain}|'):
             return json.loads(cached)
 
         cls.update(domain)
@@ -442,7 +443,7 @@ class ReporterCount(ndb.Model):
             domain - str - The domain to use for the namespace
             time - int - The timeout for stored keys (default: 5 seconds)
         """
-        namespace = "{}|".format(domain)
+        namespace = f"{domain}|"
         records = cls._get_from_datastore(domain, cls._memcache_result_count)
         memcache.set(
             key=cls._memcache_key,

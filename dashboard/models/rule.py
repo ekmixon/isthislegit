@@ -47,19 +47,21 @@ class RuleCondition(ndb.Model):
         # Try to match the headers
         if self.attribute == 'header':
             for header in report.headers:
-                if self.key == "" or self._text_match(self.matches,
-                                                      header.name, self.key):
-                    if self.value == "" or self._text_match(
-                            self.matches, header.value, self.value):
-                        matches = True
+                if (
+                    self.key == ""
+                    or self._text_match(self.matches, header.name, self.key)
+                ) and (
+                    self.value == ""
+                    or self._text_match(self.matches, header.value, self.value)
+                ):
+                    matches = True
 
         # Try to match the text/html
-        if self.attribute == 'body':
-            if self.value != "":
-                if self._text_match(self.matches, report.text, self.value):
-                    matches = True
-                if self.text_match(self.matches, report.html, self.value):
-                    matches = True
+        if self.attribute == 'body' and self.value != "":
+            if self._text_match(self.matches, report.text, self.value):
+                matches = True
+            if self.text_match(self.matches, report.html, self.value):
+                matches = True
         return matches
 
 
@@ -76,10 +78,7 @@ class RuleAction(ndb.Model):
         Loads and executes the correct rule on the report
         """
         action = actions.load(self.action)
-        if not action:
-            return None
-        result = action.execute(report, self.options)
-        return result
+        return action.execute(report, self.options) if action else None
 
 
 class Rule(ndb.Model):
@@ -114,8 +113,7 @@ class Rule(ndb.Model):
         required_props = ['name']
         for prop in required_props:
             if not data.get(prop):
-                raise RuleValidationException(
-                    'Missing required field {}'.format(prop))
+                raise RuleValidationException(f'Missing required field {prop}')
         '''
         for condition in data.get('conditions'):
             if not condition.validate():
@@ -134,20 +132,21 @@ class Rule(ndb.Model):
         """
         self.name = data.get('name')
         self.active = data.get('active')
-        self.conditions = []
         self.actions = []
-        for condition in data.get('conditions'):
-            self.conditions.append(
-                RuleCondition(
-                    attribute=condition.get('attribute'),
-                    key=condition.get('key'),
-                    value=condition.get('body'),
-                    matches=condition.get('matches')))
-        for action in data.get('actions'):
-            self.actions.append(
-                RuleAction(
-                    action=action.get('action'), options=action.get(
-                        'options')))
+        self.conditions = [
+            RuleCondition(
+                attribute=condition.get('attribute'),
+                key=condition.get('key'),
+                value=condition.get('body'),
+                matches=condition.get('matches'),
+            )
+            for condition in data.get('conditions')
+        ]
+
+        self.actions.extend(
+            RuleAction(action=action.get('action'), options=action.get('options'))
+            for action in data.get('actions')
+        )
 
     def evaluate(self, report):
         """

@@ -54,7 +54,7 @@ class StatusTimeline(ndb.Model):
         and returns that data. By default stores entries to expire after
         24 hours.
         """
-        namespace = "{}|".format(domain)
+        namespace = f"{domain}|"
         if not records:
             records = cls._get_from_datastore(domain,
                                               cls._memcache_date_offset)
@@ -74,12 +74,8 @@ class StatusTimeline(ndb.Model):
         if days > cls._memcache_date_offset:
             return cls._get_from_datastore(domain, days)
 
-        cached = memcache.get(
-            key=cls._memcache_key, namespace='{}|'.format(domain))
-
-        if cached:
-            records = json.loads(cached)
-            return records
+        if cached := memcache.get(key=cls._memcache_key, namespace=f'{domain}|'):
+            return json.loads(cached)
 
         return cls._update_memcached(domain)
 
