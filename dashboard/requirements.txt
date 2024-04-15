@@ -19,7 +19,7 @@ google-auth==1.6.1
 google-auth-httplib2==0.0.3
 GoogleAppEngineCloudStorageClient==1.9.22.1
 httplib2==0.18.0
-idna==2.8
+idna==3.7
 ipaddress==1.0.22
 itsdangerous==1.1.0
 Jinja2==2.10.1
