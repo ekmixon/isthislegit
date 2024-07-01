@@ -1,4 +1,4 @@
-FROM google/cloud-sdk:alpine
+FROM google/cloud-sdk:482.0.0-alpine
 LABEL maintainer="jwright@duosecurity.com"
 
 # Install build dependencies
